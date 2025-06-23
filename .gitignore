@@ -29,3 +29,5 @@ OneDrive/
 Documents/
 Downloads/
 Desktop/
+!build/
+!build/IntraSeal.exe
