@@ -1,0 +1,31 @@
+# Archivos de sistema y temporales
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Configs de usuario
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos sensibles
+*.ps1~
+*.ps1.save
+*.old
+*.secret
+
+# Node, Python, Java cache (por si después agregás)
+node_modules/
+__pycache__/
+target/
+build/
+
+# Carpetas que no querés subir por error
+AppData/
+OneDrive/
+Documents/
+Downloads/
+Desktop/
