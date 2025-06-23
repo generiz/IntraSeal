@@ -11,19 +11,19 @@ Thumbs.db
 .idea/
 *.code-workspace
 
-# Archivos sensibles
+
 *.ps1~
 *.ps1.save
 *.old
 *.secret
 
-# Node, Python, Java cache (por si después agregás)
+
 node_modules/
 __pycache__/
 target/
 build/
 
-# Carpetas que no querés subir por error
+
 AppData/
 OneDrive/
 Documents/
