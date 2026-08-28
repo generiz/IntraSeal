@@ -81,13 +81,20 @@ It does not protect a file while plaintext is open on a compromised endpoint. It
 
 For organizational deployments, passphrase policy and key lifecycle controls should be handled outside the tool.
 
+## Security lab
+
+`labs/veil-link` contains Veil Link, a Rust peer-to-peer encrypted terminal channel built on `Noise_XX_25519_ChaChaPoly_BLAKE2s`. It uses ephemeral X25519 key agreement, ChaCha20-Poly1305 authenticated encryption, peer fingerprint verification and identity pinning.
+
+Veil Link is intentionally separate from the file-envelope code so its transport and trust model can be reviewed independently.
+
 ## Repository layout
 
 ```text
-src/intraseal/core.py    envelope format, KDF and authenticated encryption
-src/intraseal/cli.py     command-line interface
-tests/test_core.py       round-trip, tamper and authentication tests
-.github/workflows/       CI across supported Python versions
+src/intraseal/core.py          envelope format, KDF and authenticated encryption
+src/intraseal/cli.py           command-line interface
+tests/test_core.py             round-trip, tamper and authentication tests
+labs/veil-link/                Noise-based secure communications prototype
+.github/workflows/             Python and Rust CI
 ```
 
 ## License
