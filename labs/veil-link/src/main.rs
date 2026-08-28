@@ -99,6 +99,7 @@ fn main() -> Result<()> {
             identity.save(&out)?;
             println!("identity: {}", fingerprint(&identity.public));
             println!("stored: {}", out.display());
+            Ok(())
         }
         Command::Listen { bind, key, expect } => {
             let identity = Identity::load(&key)?;
@@ -165,9 +166,7 @@ fn build_handshake(identity: &Identity, initiator: bool) -> Result<HandshakeStat
 }
 
 fn verify_remote(noise: &HandshakeState, expect: Option<&str>) -> Result<()> {
-    let remote = noise
-        .get_remote_static()
-        .ok_or_else(|| anyhow!("remote identity unavailable"))?;
+    let remote = noise.get_remote_static().ok_or_else(|| anyhow!("remote identity unavailable"))?;
     let actual = fingerprint(remote);
     println!("remote fingerprint: {actual}");
     if let Some(expected) = expect {
@@ -194,10 +193,7 @@ fn run_session(stream: TcpStream, transport: TransportState) -> Result<()> {
                 Err(err) => return Err(err),
             };
             let mut plaintext = vec![0u8; frame.len()];
-            let len = rx_state
-                .lock()
-                .map_err(|_| anyhow!("session state poisoned"))?
-                .read_message(&frame, &mut plaintext)?;
+            let len = rx_state.lock().map_err(|_| anyhow!("session state poisoned"))?.read_message(&frame, &mut plaintext)?;
             println!("peer> {}", String::from_utf8_lossy(&plaintext[..len]));
         }
     });
@@ -209,15 +205,12 @@ fn run_session(stream: TcpStream, transport: TransportState) -> Result<()> {
         if line == "/quit" {
             break;
         }
-        if line.as_bytes().len() > MESSAGE_LIMIT {
+        if line.len() > MESSAGE_LIMIT {
             eprintln!("message exceeds {MESSAGE_LIMIT} bytes");
             continue;
         }
-        let mut ciphertext = vec![0u8; line.as_bytes().len() + 64];
-        let len = state
-            .lock()
-            .map_err(|_| anyhow!("session state poisoned"))?
-            .write_message(line.as_bytes(), &mut ciphertext)?;
+        let mut ciphertext = vec![0u8; line.len() + 64];
+        let len = state.lock().map_err(|_| anyhow!("session state poisoned"))?.write_message(line.as_bytes(), &mut ciphertext)?;
         write_frame(&mut tx, &ciphertext[..len])?;
     }
 
@@ -262,25 +255,14 @@ fn fingerprint(public_key: &[u8]) -> String {
 }
 
 fn normalize_fingerprint(value: &str) -> String {
-    value
-        .chars()
-        .filter(|c| c.is_ascii_hexdigit())
-        .flat_map(char::to_lowercase)
-        .collect()
+    value.chars().filter(|c| c.is_ascii_hexdigit()).flat_map(char::to_lowercase).collect()
 }
 
 fn is_disconnect(err: &anyhow::Error) -> bool {
     err.chain().any(|cause| {
         cause
             .downcast_ref::<io::Error>()
-            .map(|io_err| {
-                matches!(
-                    io_err.kind(),
-                    io::ErrorKind::UnexpectedEof
-                        | io::ErrorKind::ConnectionReset
-                        | io::ErrorKind::BrokenPipe
-                )
-            })
+            .map(|io_err| matches!(io_err.kind(), io::ErrorKind::UnexpectedEof | io::ErrorKind::ConnectionReset | io::ErrorKind::BrokenPipe))
             .unwrap_or(false)
     })
 }
@@ -321,9 +303,6 @@ mod tests {
         let key = [7u8; 32];
         let fp = fingerprint(&key);
         assert_eq!(normalize_fingerprint(&fp).len(), 32);
-        assert_eq!(
-            normalize_fingerprint(&fp.to_uppercase()),
-            normalize_fingerprint(&fp)
-        );
+        assert_eq!(normalize_fingerprint(&fp.to_uppercase()), normalize_fingerprint(&fp));
     }
 }
