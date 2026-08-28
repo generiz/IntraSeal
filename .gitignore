@@ -1,31 +1,8 @@
-# Archivos de sistema y temporales
-*.log
-*.tmp
-*.bak
-*.swp
-.DS_Store
-Thumbs.db
-
-# Configs de usuario
-.vscode/
-.idea/
-*.code-workspace
-
-
-*.ps1~
-*.ps1.save
-*.old
-*.secret
-
-
-node_modules/
 __pycache__/
-target/
+*.py[cod]
+.pytest_cache/
+.venv/
+dist/
 build/
-
-
-AppData/
-OneDrive/
-Documents/
-Downloads/
-Desktop/
+*.egg-info/
+*.seal

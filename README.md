@@ -1,88 +1,95 @@
-# IntraSeal - Internal Security Framework
+# IntraSeal
 
-**Author:** Nicolás Pintos  
-**Website:** [www.nicolaspintos.com](https://www.nicolaspintos.com)  
-**Version:** 1.0
+IntraSeal is a small command-line tool for creating authenticated encrypted file envelopes. It is designed for local handling of sensitive documents where confidentiality and tamper detection matter more than platform-specific integration.
 
----
+The tool does not implement cryptographic primitives itself. It uses `cryptography` for AES-256-GCM and scrypt.
 
-## 🔐 Overview
+## Security properties
 
-**IntraSeal** is a lightweight internal security tool for Windows environments. It scans all `.exe` files in a target folder (and subfolders), and:
+- AES-256-GCM authenticated encryption
+- scrypt passphrase derivation with a random 128-bit salt
+- fresh 96-bit nonce for every envelope
+- streaming I/O for large files
+- header authentication through GCM additional authenticated data
+- atomic output replacement
+- failed authentication does not leave plaintext output behind
+- passphrases are requested through a hidden terminal prompt rather than command-line arguments
 
-- ❌ Blocks each executable's outbound network access via Windows Firewall
-- ✅ Optionally excludes the folder from Windows Defender scans
-- 📄 Generates a detailed execution log
-- 🌐 Optionally opens the author's website at the end of the process
+## Install
 
----
-
-## 📦 Features
-
-- Fully written in **PowerShell**
-- No third-party dependencies required
-- Silent execution with **log output to Desktop**
-- Optional popup to visit the author's website
-- Visual branding using ASCII art at launch
-
----
-
-## 🚀 Usage
-
-1. **Run as Administrator**  
-   This is required for modifying firewall rules and Defender settings.
-
-2. **Execute the script:**
-
-```powershell
-.\IntraSeal.ps1 -TargetFolder "C:\Path\To\Folder"
+```bash
+python -m pip install -e .
 ```
 
-If no path is provided, it will default to the current directory.
+For development:
 
-3. **Expected Result:**
-
-- All `.exe` files inside the target directory will be blocked from accessing the internet.
-- If Windows Defender is active, the folder will be excluded from scans.
-- A log will be created on your Desktop as `IntraSeal_log.txt`.
-- A popup may ask if you'd like to visit the author's website.
-
----
-
-## 🛠️ Requirements
-
-- Windows 10 or higher
-- PowerShell 5.1+
-- Administrator privileges
-
----
-
-## 🔍 How to Confirm It Worked
-
-To verify that the executables were blocked:
-
-```powershell
-Get-NetFirewallRule | Where-Object DisplayName -like "IntraSeal_*"
+```bash
+python -m pip install -e ".[dev]"
+pytest
 ```
 
-To verify if Defender exclusion was added:
+## Usage
 
-```powershell
-Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+Encrypt a file:
+
+```bash
+intraseal encrypt financial-report.pdf
 ```
 
-(You must run these as Administrator)
+The default output is `financial-report.pdf.seal`.
 
----
+Decrypt it:
 
-## ⚠️ Disclaimer
+```bash
+intraseal decrypt financial-report.pdf.seal
+```
 
-This script is provided as-is for internal use, testing, and educational purposes.  
-Always ensure compliance with security policies, organizational standards, and legal guidelines.
+Inspect the non-secret envelope parameters:
 
----
+```bash
+intraseal inspect financial-report.pdf.seal
+```
 
-## 📫 Contact
+Calculate a SHA-256 digest:
 
-For questions, suggestions, or collaborations, visit:  
-👉 [www.nicolaspintos.com](https://www.nicolaspintos.com)
+```bash
+intraseal hash financial-report.pdf
+```
+
+Use `-o` to select an output path and `--force` only when replacing an existing destination is intentional.
+
+## Envelope format
+
+Version 1 uses a fixed binary header followed by ciphertext and a 128-bit GCM authentication tag.
+
+| Field | Size |
+| --- | ---: |
+| Magic | 9 bytes |
+| Version | 1 byte |
+| Salt | 16 bytes |
+| Nonce | 12 bytes |
+| Ciphertext | variable |
+| GCM tag | 16 bytes |
+
+The complete header is authenticated as additional data. Original filenames, timestamps and paths are not embedded in the envelope.
+
+## Threat model
+
+IntraSeal protects file contents against offline disclosure when the attacker obtains the encrypted file but not the passphrase. It also detects changes to the authenticated envelope.
+
+It does not protect a file while plaintext is open on a compromised endpoint. It does not provide key escrow, identity management, secure deletion, hardware-backed key storage or protection against a weak passphrase.
+
+For organizational deployments, passphrase policy and key lifecycle controls should be handled outside the tool.
+
+## Repository layout
+
+```text
+src/intraseal/core.py    envelope format, KDF and authenticated encryption
+src/intraseal/cli.py     command-line interface
+tests/test_core.py       round-trip, tamper and authentication tests
+.github/workflows/       CI across supported Python versions
+```
+
+## License
+
+MIT
